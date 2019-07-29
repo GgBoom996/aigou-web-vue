@@ -16,7 +16,7 @@
 </template>
 
 <script>
-  import { requestLogin } from '../api/api';
+  // import { requestLogin } from '../api/api';
   //import NProgress from 'nprogress'
   export default {
     data() {
@@ -51,7 +51,7 @@
             this.logining = true;
             //NProgress.start();
             var loginParams = { username: this.ruleForm2.account, password: this.ruleForm2.checkPass };
-            requestLogin(loginParams).then(data => {
+            /*requestLogin(loginParams).then(data => {
               this.logining = false;
               //NProgress.done();
               let { msg, code, user } = data;
@@ -64,7 +64,25 @@
                 sessionStorage.setItem('user', JSON.stringify(user));
                 this.$router.push({ path: '/table' });
               }
-            });
+            });*/
+            //自己发送ajax请求
+              this.$http.post('/user/login',loginParams)
+                  .then(result =>{
+                      console.debug(result)
+                      this.logining = false;
+                      let {success, message, obj, errorCode} = result.data;
+                      if (!success) {
+                          this.$message({
+                              message: message,
+                              type: 'error'
+                          });
+                      }else {
+                          //将用户存入session中
+                          sessionStorage.setItem('user', JSON.stringify(obj));
+                          //页面跳转到首页
+                          this.$router.push({ path: '/echarts' });
+                      }
+                  })
           } else {
             console.log('error submit!!');
             return false;
