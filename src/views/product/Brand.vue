@@ -21,17 +21,17 @@
 			</el-table-column>
 			<el-table-column type="index" width="60">
 			</el-table-column>
-			<el-table-column prop="name" label="品牌名称" width="100" sortable>
+			<el-table-column prop="name" label="品牌名称" width="130" sortable>
 			</el-table-column>
-			<el-table-column prop="englishName" label="英文名称" width="110" sortable>
+			<el-table-column prop="englishName" label="英文名称" width="130" sortable>
 			</el-table-column>
-			<el-table-column prop="logo" label="logo" width="130" sortable>
+			<el-table-column prop="logo" label="logo" width="180" sortable>
 			</el-table-column>
-			<el-table-column prop="description" label="描述" min-width="110" sortable>
+			<el-table-column prop="description" label="描述" min-width="200" sortable>
 			</el-table-column>
-			<el-table-column prop="productType.name" label="类型" width="145" sortable>
+			<el-table-column prop="productType.name" label="类型" width="170" sortable>
 			</el-table-column>
-			<el-table-column prop="productType.description" label="类型描述" width="145" sortable>
+			<el-table-column prop="productType.description" label="类型描述" width="170" sortable>
 			</el-table-column>
 			<el-table-column label="操作" width="150">
 				<!--自定义列显示的模板-->
@@ -53,23 +53,18 @@
 		<!--编辑界面-->
 		<el-dialog title="编辑" v-model="editFormVisible" :close-on-click-modal="false">
 			<el-form :model="editForm" label-width="80px" :rules="editFormRules" ref="editForm">
-				<el-form-item label="姓名" prop="name">
+				<!--label 表单组件的信息  prop  验证使用-->
+				<el-form-item label="品牌名称" prop="name">
 					<el-input v-model="editForm.name" auto-complete="off"></el-input>
 				</el-form-item>
-				<el-form-item label="性别">
-					<el-radio-group v-model="editForm.sex">
-						<el-radio class="radio" :label="1">男</el-radio>
-						<el-radio class="radio" :label="0">女</el-radio>
-					</el-radio-group>
+				<el-form-item label="英文名称" prop="englishName">
+					<el-input v-model="editForm.englishName" auto-complete="off"></el-input>
 				</el-form-item>
-				<el-form-item label="年龄">
-					<el-input-number v-model="editForm.age" :min="0" :max="200"></el-input-number>
+				<el-form-item label="类型" prop="productTypeId">
+					<el-input v-model="editForm.productTypeId" auto-complete="off"></el-input>
 				</el-form-item>
-				<el-form-item label="生日">
-					<el-date-picker type="date" placeholder="选择日期" v-model="editForm.birth"></el-date-picker>
-				</el-form-item>
-				<el-form-item label="地址">
-					<el-input type="textarea" v-model="editForm.addr"></el-input>
+				<el-form-item label="描述">
+					<el-input type="textarea" v-model="editForm.description"></el-input>
 				</el-form-item>
 			</el-form>
 			<div slot="footer" class="dialog-footer">
@@ -137,12 +132,11 @@
 				},
 				//编辑界面数据
 				editForm: {
-					id: 0,
-					name: '',
-					sex: -1,
-					age: 0,
-					birth: '',
-					addr: ''
+                    id: 0,
+                    name: '',
+                    englishName:'',
+                    productTypeId:null,
+                    description:''
 				},
 
 				addFormVisible: false,//新增界面是否显示
@@ -248,7 +242,27 @@
 							this.editLoading = true;
 							//NProgress.start();
 							let para = Object.assign({}, this.editForm);
-							para.birth = (!para.birth || para.birth == '') ? '' : util.formatDate.format(new Date(para.birth), 'yyyy-MM-dd');
+
+                            this.$http.post("/product/brand/save",para)
+                                .then(res=>{
+                                    this.addLoading = false;
+                                    let data = res.data;
+                                    if(data.success){
+                                        this.$message({
+                                            message: '提交成功',
+                                            type: 'success'
+                                        });
+                                        this.$refs['editForm'].resetFields();//清空表单
+                                        this.editFormVisible = false;//关闭模态框
+                                        this.getBrands();//重新加载表格数据
+                                    }else{
+                                        this.$message({
+                                            message: data.message,
+                                            type: 'error'
+                                        });
+                                    }
+                                })
+							/*para.birth = (!para.birth || para.birth == '') ? '' : util.formatDate.format(new Date(para.birth), 'yyyy-MM-dd');
 							editUser(para).then((res) => {
 								this.editLoading = false;
 								//NProgress.done();
@@ -259,7 +273,7 @@
 								this.$refs['editForm'].resetFields();
 								this.editFormVisible = false;
 								this.getBrands();
-							});
+							});*/
 						});
 					}
 				});
