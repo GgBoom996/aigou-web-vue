@@ -26,6 +26,9 @@
 			<el-table-column prop="englishName" label="英文名称" width="130" sortable>
 			</el-table-column>
 			<el-table-column prop="logo" label="logo" width="180" sortable>
+				<template scope="scope">
+					<img :src="'http://172.16.4.173/'+scope.row.logo" height="50"/>
+				</template>
 			</el-table-column>
 			<el-table-column prop="description" label="描述" min-width="200" sortable>
 			</el-table-column>
@@ -61,7 +64,13 @@
 					<el-input v-model="editForm.englishName" auto-complete="off"></el-input>
 				</el-form-item>
 				<el-form-item label="类型" prop="productTypeId">
-					<el-input v-model="editForm.productTypeId" auto-complete="off"></el-input>
+					<!--<el-input v-model="editForm.productTypeId" auto-complete="off"></el-input>-->
+					<el-cascader
+							expand-trigger="hover"
+							:options="productTypes"
+							:props="props"
+							v-model="editForm.productTypeId">
+					</el-cascader>
 				</el-form-item>
 				<el-form-item label="描述">
 					<el-input type="textarea" v-model="editForm.description"></el-input>
@@ -91,7 +100,32 @@
 					<el-input v-model="addForm.englishName" auto-complete="off"></el-input>
 				</el-form-item>
 				<el-form-item label="类型" prop="productTypeId">
-					<el-input v-model="addForm.productTypeId" auto-complete="off"></el-input>
+					<!--<el-input v-model="addForm.productTypeId" auto-complete="off"></el-input>-->
+					<el-cascader
+							expand-trigger="hover"
+							:options="productTypes"
+							:props="props"
+							v-model="addForm.productTypeId">
+					</el-cascader>
+				</el-form-item>
+				<el-form-item label="logo">
+					<!--
+                    action 必选参数, 上传的地址
+                    on-remove : 删除的回调
+                    file-list : 上传的文件列表
+                    -->
+					<el-upload
+							class="upload-demo"
+							action="http://localhost:1024/common/fastdfs"
+							:on-remove="handleRemoveLogo"
+							:file-list="logoList"
+							:on-success="handleSuccess"
+							:multiple="false"
+							:before-upload="handleBeforeUpload"
+							list-type="picture">
+						<el-button size="small" type="primary">点击上传</el-button>
+						<div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过500kb</div>
+					</el-upload>
 				</el-form-item>
 				<el-form-item label="描述">
 					<el-input type="textarea" v-model="addForm.description"></el-input>
@@ -112,55 +146,89 @@
 
 	export default {
 		data() {
-			return {
-				filters: {
-					keyword: ''
-				},
-				pageSize:10,
-				brands: [],
-				total: 0,
-				page: 1,
-				listLoading: false,
-				sels: [],//列表选中列
+            return {
+                logoList: [],
+                productTypes: [],
+                props: {
+                    label: "name",
+                    value: "id"
+                },
+                filters: {
+                    keyword: ''
+                },
+                pageSize: 10,
+                brands: [],
+                total: 0,
+                page: 1,
+                listLoading: false,
+                sels: [],//列表选中列
 
-				editFormVisible: false,//编辑界面是否显示
-				editLoading: false,
-				editFormRules: {
-					name: [
-						{ required: true, message: '请输入姓名', trigger: 'blur' }
-					]
-				},
-				//编辑界面数据
-				editForm: {
+                editFormVisible: false,//编辑界面是否显示
+                editLoading: false,
+                editFormRules: {
+                    name: [
+                        {required: true, message: '请输入姓名', trigger: 'blur'}
+                    ]
+                },
+                //编辑界面数据
+                editForm: {
                     id: 0,
                     name: '',
-                    englishName:'',
-                    productTypeId:null,
-                    description:''
-				},
+                    englishName: '',
+                    productTypeId: null,
+                    description: '',
+					logo: ''
+                },
 
-				addFormVisible: false,//新增界面是否显示
-				addLoading: false,
-				addFormRules: {
-					name: [
-						{ required: true, message: '请输入姓名', trigger: 'blur' }
-					]
-				},
-				//新增界面数据
-				addForm: {
-					name: '',
-					englishName:'',
-					productTypeId:null,
-                    description:''
-				}
+                addFormVisible: false,//新增界面是否显示
+                addLoading: false,
+                addFormRules: {
+                    name: [
+                        {required: true, message: '请输入姓名', trigger: 'blur'}
+                    ]
+                },
+                //新增界面数据
+                addForm: {
+                    name: '',
+                    englishName: '',
+                    productTypeId: null,
+                    description: '',
+                    logo: ''
 
-			}
+                }
+            };
 		},
 		methods: {
-			//性别显示转换
-			formatSex: function (row, column) {
-				return row.sex == 1 ? '男' : row.sex == 0 ? '女' : '未知';
-			},
+            //上传之前
+            handleBeforeUpload(){
+                if(this.logoList.length>0){
+                    this.$message({
+                        message: '只能上传一个文件',
+                        type: 'error'
+                    });
+                    return false;
+                }
+            },
+            //logo上传成功的钩子函数
+            handleSuccess(response, file, fileList){
+                console.debug(response	)
+				console.debug(fileList)
+                this.addForm.logo = response.obj;
+                this.logoList = fileList;
+            },
+            //删除图片
+            handleRemoveLogo(file, fileList){
+                console.debug("file",file)
+                console.debug("fileList",fileList)
+                this.logoList = fileList;
+            },
+            //加载类型数据
+            loadProductTypes(){
+                this.$http.get("/product/productType/list")
+                    .then(res=>{
+                        this.productTypes = res.data;
+                    })
+            },
 			handleCurrentChange(val) {
 				this.page = val;
 				this.getBrands();
@@ -227,11 +295,13 @@
 			//显示新增界面
 			handleAdd: function () {
 				this.addFormVisible = true;
+                this.logoList = [];
 				this.addForm = {
                     name: '',
                     englishName:'',
                     productTypeId:null,
-                    description:''
+                    description:'',
+                    logo: ''
 				};
 			},
 			//编辑
@@ -286,6 +356,8 @@
 							this.addLoading = true;
 							//NProgress.start();
 							let para = Object.assign({}, this.addForm);//对象的复制
+                            //级联选择器的结果是一个数组
+                            para.productTypeId = para.productTypeId[para.productTypeId.length-1];
 							this.$http.post("/product/brand/save",para)
 								.then(res=>{
                                     this.addLoading = false;
@@ -353,6 +425,7 @@
 		//相当于jquery的$(function(){})
 		mounted() {
 			this.getBrands();
+			this.loadProductTypes();
 		}
 	}
 
