@@ -209,27 +209,7 @@
 			return {
 			    //年龄[萝莉 御姐] 肤色[土豪金 绿巨人]
 
-			    skus:[{
-			        "年龄":"萝莉",
-					"肤色":"土豪金",
-					price:0,
-					store:0
-				},{
-                    "年龄":"御姐",
-                    "肤色":"土豪金",
-                    price:0,
-                    store:0
-                },{
-                    "年龄":"萝莉",
-                    "肤色":"绿巨人",
-                    price:0,
-                    store:0
-                },{
-                    "年龄":"御姐",
-                    "肤色":"绿巨人",
-                    price:0,
-                    store:0
-                }],
+			    skus:[],
                 skuProperties:[],
                 skuPropertiesDialogVisible:false,
 			    viewProperties:[],
@@ -296,9 +276,9 @@
                         let ajaxResult = res.data;
                         if(ajaxResult.success){
                             this.$message({
-                                message:"操作成功!",
-                                type:"success"
-                            })
+                                message: "操作成功!",
+                                type: "success"
+                            });
                             this.skuPropertiesDialogVisible = false;
                         }else{
                             this.$message({
@@ -325,6 +305,7 @@
 								message:"操作成功!",
 								type:"success"
 							})
+                            this.viewProperties = [];
 							this.viewPropertiesDialogVisible = false;
 						}else{
                             this.$message({
@@ -351,13 +332,12 @@
 
 				//发请求到后台获取商品的显示属性的信息
 				let productId = this.sels[0].id;
+                this.viewProperties = null;
 				this.$http.get("/product/product/getViewProperties?productId="+productId)
 					.then(res=>{
 					    this.viewProperties = res.data;
 					})
-
 				this.viewPropertiesDialogVisible = true;
-
 			},
 			//sku属性维护
             handleSkuProperties(){
@@ -371,17 +351,91 @@
                 }
                 //查询sku属性和选项
                 let productId = this.sels[0].id;
+                this.skuProperties = [];
                 this.$http.get("/product/product/getSkuProperties?productId="+productId)
                     .then(res=>{
                         this.skuProperties = res.data;
                     })
-
                 this.skuPropertiesDialogVisible = true;
 			},
-			//上架
-            handleOnSale(){},
-			//下架
-            handleOffSale(){},
+            //上架
+            handleOnSale(){
+                if(this.sels.length<=0){
+                    this.$message({
+                        message:"至少选中一行执行上架操作!",
+                        type:"warning"
+                    })
+                    return;
+                }
+                //执行上架操作
+                this.$confirm('确认上架这些商品吗?', '提示', {
+                    type: 'warning'
+                }).then(() => {
+                    //获取到选中的商品id
+                    var ids = this.sels.map(item => item.id).toString();
+                    //发送请求
+                    this.$http.get("/product/product/onSale",{
+                        params:{
+                            ids:ids
+                        }
+                    }).then(res=>{
+                        if(res.data.success){
+                            this.$message({
+                                message:"上架成功!",
+                                type:"success"
+                            })
+                            //重新加载table
+                            this.getProducts();
+                        }else{
+                            this.$message({
+                                message:res.data.message,
+                                type:"error"
+                            })
+                        }
+                    })
+                }).catch(() => {
+
+                });
+            },
+            //下架
+            handleOffSale(){
+                if(this.sels.length<=0){
+                    this.$message({
+                        message:"至少选中一行执行下架操作!",
+                        type:"warning"
+                    })
+                    return;
+                }
+                //执行上架操作
+                this.$confirm('确认下架这些商品吗?', '提示', {
+                    type: 'warning'
+                }).then(() => {
+                    //获取到选中的商品id
+                    var ids = this.sels.map(item => item.id).toString();
+                    //发送请求
+                    this.$http.get("/product/product/offSale",{
+                        params:{
+                            ids:ids
+                        }
+                    }).then(res=>{
+                        if(res.data.success){
+                            this.$message({
+                                message:"下架成功!",
+                                type:"success"
+                            })
+                            //重新加载table
+                            this.getProducts();
+                        }else{
+                            this.$message({
+                                message:res.data.message,
+                                type:"error"
+                            })
+                        }
+                    })
+                }).catch(() => {
+
+                });
+            },
             handleSuccessImg(response, file, fileList){
                 let fileId = response.restObj;//从响应中获取到fileId
                 this.mediasList = fileList;
@@ -429,8 +483,8 @@
 			//获取商品列表
 			getProducts() {
 				let para = {
-					pageNum: this.page,
-					pageSize:this.pageSize
+					size: this.page,
+					num:this.pageSize
 				};
 				this.listLoading = true;
 				//NProgress.start();
@@ -526,7 +580,7 @@
 							productExt.description = this.addForm.description
 							productExt.richContent = this.addForm.richContent
 							para.productExt = productExt
-							this.$http.post("/product/product/add",para)
+							this.$http.post("/product/product/save",para)
 								.then(res=>{
                                     this.addLoading = false;
                                     if(res.data.success){
